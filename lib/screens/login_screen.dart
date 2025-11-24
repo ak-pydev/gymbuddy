@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import '../theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,16 +9,44 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -25,7 +54,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const HomeScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          transitionDuration: AppTheme.durationNormal,
+        ),
       );
     }
   }
@@ -38,6 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           slivers: [
             // App Bar
             SliverAppBar(
@@ -46,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               elevation: 0,
               actions: [
                 TextButton(onPressed: _handleLogin, child: const Text('Skip')),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTheme.spaceMd),
               ],
             ),
 
@@ -54,164 +91,236 @@ class _LoginScreenState extends State<LoginScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.all(AppTheme.spaceLg),
                 child: Column(
                   children: [
                     const Spacer(flex: 1),
 
                     // Logo Section
-                    Image.asset(
-                      'assets/motion_arc_logo.png',
-                      width: 160,
-                      height: 160,
-                      fit: BoxFit.contain,
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Hero(
+                        tag: 'app_logo',
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: AppTheme.shadowColored(
+                              colorScheme.primary,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/motion_arc_logo.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: AppTheme.spaceXl),
 
                     // Headline
-                    Text(
-                      'MOTION ARC',
-                      style: theme.textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Text(
+                        'MOTION ARC',
+                        style: theme.textTheme.headlineLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppTheme.spaceMd),
 
                     // Subheadline
-                    Text(
-                      'AI-powered motion tracking\nfor perfect form',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Text(
+                        'AI-powered motion tracking\nfor perfect form',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      textAlign: TextAlign.center,
                     ),
 
                     const Spacer(flex: 2),
 
                     // Login Form
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Email Field
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
-                              hintText: 'your@email.com',
-                              prefixIcon: Icon(Icons.email_outlined),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password Field
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              hintText: 'Enter your password',
-                              prefixIcon: const Icon(Icons.lock_outline),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
+                    SlideTransition(
+                      position: _slideAnimation,
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Email Field
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: 'Email',
+                                  hintText: 'your@email.com',
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd,
+                                    ),
+                                  ),
                                 ),
-                                onPressed: () {
-                                  setState(() {
-                                    _obscurePassword = !_obscurePassword;
-                                  });
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  if (!value.contains('@')) {
+                                    return 'Please enter a valid email';
+                                  }
+                                  return null;
                                 },
                               ),
-                            ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 8),
+                              const SizedBox(height: AppTheme.spaceMd),
 
-                          // Forgot Password
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {},
-                              child: const Text('Forgot password?'),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Sign In Button
-                          FilledButton(
-                            onPressed: _handleLogin,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Text('Sign in'),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Divider
-                          Row(
-                            children: [
-                              const Expanded(child: Divider()),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                              // Password Field
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  hintText: 'Enter your password',
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd,
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  'or',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password must be at least 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: AppTheme.spaceSm),
+
+                              // Forgot Password
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {},
+                                  child: const Text('Forgot password?'),
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceLg),
+
+                              // Sign In Button
+                              Container(
+                                height: 56,
+                                decoration: AppTheme.gradientCardDecoration(
+                                  colorScheme.primary,
+                                  colorScheme.primary.withValues(alpha: 0.8),
+                                ),
+                                child: FilledButton(
+                                  onPressed: _handleLogin,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    shadowColor: Colors.transparent,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppTheme.radiusLg,
+                                      ),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    'Sign in',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                 ),
                               ),
-                              const Expanded(child: Divider()),
+                              const SizedBox(height: AppTheme.spaceLg),
+
+                              // Divider
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppTheme.spaceMd,
+                                    ),
+                                    child: Text(
+                                      'or',
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: AppTheme.spaceLg),
+
+                              // Google Sign In
+                              OutlinedButton.icon(
+                                onPressed: _handleLogin,
+                                icon: const Icon(Icons.g_mobiledata, size: 28),
+                                label: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12.0),
+                                  child: Text('Continue with Google'),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceMd),
+
+                              // Apple Sign In
+                              OutlinedButton.icon(
+                                onPressed: _handleLogin,
+                                icon: const Icon(Icons.apple),
+                                label: const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12.0),
+                                  child: Text('Continue with Apple'),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      AppTheme.radiusMd,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-
-                          // Google Sign In
-                          OutlinedButton.icon(
-                            onPressed: _handleLogin,
-                            icon: const Icon(Icons.g_mobiledata, size: 28),
-                            label: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Text('Continue with Google'),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Apple Sign In
-                          OutlinedButton.icon(
-                            onPressed: _handleLogin,
-                            icon: const Icon(Icons.apple),
-                            label: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.0),
-                              child: Text('Continue with Apple'),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
 
@@ -231,7 +340,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: AppTheme.spaceMd),
                   ],
                 ),
               ),

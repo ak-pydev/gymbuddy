@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'screens/login_screen.dart';
+import 'screens/auth/welcome_screen.dart';
+import 'screens/main_navigation.dart';
 import 'theme/theme_provider.dart';
+
+// Set to true to skip login during development
+const bool kSkipLogin = true;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -181,7 +185,7 @@ class MotionArcApp extends StatelessWidget {
             ),
           ),
           themeMode: themeProvider.themeMode,
-          home: const LoginScreen(),
+          home: kSkipLogin ? const MainNavigation() : const WelcomeScreen(),
         );
       },
     );
