@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -12,10 +13,13 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'assets/motion_arc_logo.png',
-              height: 32,
-              fit: BoxFit.contain,
+            ClipOval(
+              child: Image.asset(
+                'assets/motion_arc_logo.png',
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+              ),
             ),
             const SizedBox(width: 12),
             const Text('Motion Arc'),
@@ -28,7 +32,12 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
           ),
         ],
       ),
